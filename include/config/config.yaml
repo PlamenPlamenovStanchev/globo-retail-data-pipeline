@@ -1,0 +1,39 @@
+project:
+  name: globo-retail-data-pipeline
+  environment: development
+
+aws_conn_id: aws_conn_id
+s3: 
+  bucket_name: etl-and-data-warehouse
+
+  base_prefix: globo-retail-data-pipeline
+
+  raw_zone:
+    prefix: globo-retail-data-pipeline/raw-zone
+    sales_key: globo-retail-data-pipeline/raw-zone/sales_data.csv
+    products_key: globo-retail-data-pipeline/raw-zone/product_data.json
+
+  processed_zone:
+    prefix: globo-retail-data-pipeline/processed-zone
+    sales_clean_prefix: globo-retail-data-pipeline/processed-zone/sales-clean
+
+  rejected_zone:
+    prefix: globo-retail-data-pipeline/rejected-zone
+    sales_prefix: globo-retail-data-pipeline/rejected-zone/sales
+    products_prefix: globo-retail-data-pipeline/rejected-zone/products
+
+snowflake:
+  connection_id: snowflake_default
+  database: GLOBO_RETAIL
+  warehouse: RETAIL_WH
+  raw_schema: RAW
+  cleansed_schema: CLEANSED
+  star_schema: STAR
+  presentation_schema: PRESENTATION
+  stage_name: GLOBO_RETAIL_STAGE
+  file_format_name: PARQUET_FILE_FORMAT
+
+pipeline:
+  output_format: parquet
+  retries: 2
+  retry_delay_minutes: 5
