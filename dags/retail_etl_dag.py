@@ -13,3 +13,5 @@ from pendulum import datetime
 
 def retail_dag():
     pass
+
+retail_dag()

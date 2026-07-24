@@ -8,7 +8,7 @@ def get_storage_options(aws_conn_id: str) -> dict:
     :param aws_conn_id: The Airflow connection ID for AWS.
     :return: A dictionary containing storage options.
     """
-    s3_hook = S3Hook(aws_conn_id=aws_conn_id)
+    s3_hook = S3Hook(connection_id="my_aws_conn")
     credentials = s3_hook.get_credentials()
 
     storage_options = {

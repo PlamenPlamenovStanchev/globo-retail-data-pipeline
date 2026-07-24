@@ -2,11 +2,13 @@ project:
   name: globo-retail-data-pipeline
   environment: development
 
-aws_conn_id: aws_conn_id
+aws:
+connection_id: my_aws_conn
+
 s3: 
   bucket_name: etl-and-data-warehouse
 
-  folder_prefix: globo-retail-data-pipeline
+  base_prefix: globo-retail-data-pipeline
 
   raw_zone:
     prefix: globo-retail-data-pipeline/raw-zone

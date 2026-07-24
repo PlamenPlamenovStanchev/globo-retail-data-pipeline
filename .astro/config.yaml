@@ -1,2 +1,4 @@
+postgres:
+    port: "5540"
 project:
     name: globo-retail-data-pipeline
