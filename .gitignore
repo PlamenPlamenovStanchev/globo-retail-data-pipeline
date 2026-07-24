@@ -1,0 +1,84 @@
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+credentials.json
+service-account*.json
+secrets*.json
+
+# Python bytecode, caches, and tooling output
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.cache/
+
+# Python packaging and virtual environments
+build/
+dist/
+develop-eggs/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+share/python-wheels/
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Airflow and Astro local state
+airflow.cfg
+airflow.db
+airflow.db-journal
+airflow-webserver.pid
+webserver_config.py
+logs/
+.astro/standalone/
+.astro/*.local.yml
+.astro/*.local.yaml
+
+# IDE and editor files (keep the shared WSL interpreter setting)
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.code-workspace
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary and backup files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
