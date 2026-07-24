@@ -6,7 +6,7 @@ aws_conn_id: aws_conn_id
 s3: 
   bucket_name: etl-and-data-warehouse
 
-  base_prefix: globo-retail-data-pipeline
+  folder_prefix: globo-retail-data-pipeline
 
   raw_zone:
     prefix: globo-retail-data-pipeline/raw-zone
@@ -23,14 +23,13 @@ s3:
     products_prefix: globo-retail-data-pipeline/rejected-zone/products
 
 snowflake:
-  connection_id: snowflake_default
-  database: GLOBO_RETAIL
-  warehouse: RETAIL_WH
+  connection_id: my_snowflake_conn
+  database: GLOBO_RETAIL_DB
+  warehouse: COMPUTE_WH
   raw_schema: RAW
   cleansed_schema: CLEANSED
   star_schema: STAR
   presentation_schema: PRESENTATION
-  stage_name: GLOBO_RETAIL_STAGE
   file_format_name: PARQUET_FILE_FORMAT
 
 pipeline:
