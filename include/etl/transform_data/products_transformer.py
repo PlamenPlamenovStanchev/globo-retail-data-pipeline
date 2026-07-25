@@ -60,6 +60,26 @@ def transform_products(dataframe: pd.DataFrame) -> TransformationResult:
     transformed_data["category"] = transformed_data["category"].astype("string").str.strip()
     transformed_data["brand"] = transformed_data["brand"].astype("string").str.strip()
 
+    # Business-invalid rows are quarantined rather than adjusted to pass the
+    # final analytical schema.
+    add_rejection_reason(rejection_reasons, transformed_data["product_id"].le(0), "product_id: must be positive")
+    add_rejection_reason(rejection_reasons, transformed_data["product_id"].duplicated(keep=False), "product_id: duplicate")
+    add_rejection_reason(
+        rejection_reasons,
+        transformed_data["rating"].lt(1) | transformed_data["rating"].gt(5),
+        "rating: must be between one and five",
+    )
+    add_rejection_reason(
+        rejection_reasons,
+        transformed_data["category"].isna() | transformed_data["category"].eq(""),
+        "category: missing or empty",
+    )
+    add_rejection_reason(
+        rejection_reasons,
+        transformed_data["brand"].isna() | transformed_data["brand"].eq(""),
+        "brand: missing or empty",
+    )
+
     rejected_rows = build_rejected_rows(source_data, rejection_reasons)
     clean_rows = transformed_data.loc[rejection_reasons.eq("")].copy()
     clean_rows["product_id"] = clean_rows["product_id"].astype("int64")

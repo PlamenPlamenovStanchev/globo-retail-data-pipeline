@@ -29,20 +29,22 @@ def _products_frame() -> pd.DataFrame:
 class RetailTransformerTests(unittest.TestCase):
     """Verify many-to-one left joining preserves transactional sales rows."""
 
-    def test_join_adds_product_attributes_and_preserves_unmatched_sales(self) -> None:
+    def test_join_rejects_sales_without_a_valid_matching_product(self) -> None:
         result = transform_retail(_sales_frame(), _products_frame())
         transformed = result.transformed_rows
 
-        self.assertEqual(len(transformed), 2)
+        self.assertEqual(len(transformed), 1)
         self.assertEqual(list(transformed.columns), RETAIL_OUTPUT_COLUMNS)
         self.assertEqual(transformed.loc[0, "category"], "Sports")
-        self.assertTrue(pd.isna(transformed.loc[1, "category"]))
         self.assertEqual(transformed.loc[0, "gross_revenue"], 20.0)
-        self.assertEqual(len(result.sales_rejected_rows), 0)
+        self.assertEqual(len(result.sales_rejected_rows), 1)
+        self.assertIn("no valid matching product", result.sales_rejected_rows.iloc[0]["rejection_reason"])
         self.assertEqual(len(result.products_rejected_rows), 0)
 
-    def test_duplicate_product_ids_raise_instead_of_multiplying_sales(self) -> None:
+    def test_duplicate_product_ids_are_rejected_instead_of_multiplying_sales(self) -> None:
         products = pd.concat([_products_frame(), _products_frame()], ignore_index=True)
 
-        with self.assertRaises(pd.errors.MergeError):
-            transform_retail(_sales_frame(), products)
+        result = transform_retail(_sales_frame(), products)
+
+        self.assertEqual(len(result.transformed_rows), 0)
+        self.assertEqual(len(result.products_rejected_rows), 2)

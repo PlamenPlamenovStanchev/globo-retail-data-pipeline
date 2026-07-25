@@ -13,7 +13,7 @@ def _products_frame() -> pd.DataFrame:
             "product_id": ["1000", "1001"],
             "category": [" Sports ", "Home"],
             "brand": [" BrandA ", "BrandB"],
-            "rating": ["4.5", 7.0],
+            "rating": ["4.5", 4.0],
             "in_stock": [True, "false"],
             "launch_date": ["2024-01-01", None],
         }
@@ -35,11 +35,14 @@ class ProductsTransformerTests(unittest.TestCase):
         self.assertTrue(pd.isna(transformed.loc[1, "launch_date"]))
         self.assertFalse(transformed.loc[1, "in_stock"])
 
-    def test_out_of_range_numeric_rating_remains_transformable(self) -> None:
-        result = transform_products(_products_frame())
+    def test_out_of_range_numeric_rating_is_rejected(self) -> None:
+        dataframe = _products_frame()
+        dataframe.loc[1, "rating"] = 7.0
+        result = transform_products(dataframe)
 
-        self.assertEqual(len(result.rejected_rows), 0)
-        self.assertEqual(result.transformed_rows.loc[1, "rating"], 7.0)
+        self.assertEqual(len(result.transformed_rows), 1)
+        self.assertEqual(len(result.rejected_rows), 1)
+        self.assertIn("rating: must be between one and five", result.rejected_rows.iloc[0]["rejection_reason"])
 
     def test_malformed_values_are_rejected_once_with_reason(self) -> None:
         dataframe = _products_frame()

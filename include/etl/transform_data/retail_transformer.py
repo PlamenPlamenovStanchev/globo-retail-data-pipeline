@@ -15,6 +15,7 @@ RETAIL_OUTPUT_COLUMNS = [
     "order_status", "category", "brand", "rating", "in_stock", "launch_date",
     "gross_revenue", "discount_amount", "net_revenue",
 ]
+REQUIRED_PRODUCT_COLUMNS = ("category", "brand", "rating", "in_stock")
 
 
 @dataclass
@@ -37,7 +38,13 @@ def transform_retail(sales_dataframe: pd.DataFrame, products_dataframe: pd.DataF
         validate="many_to_one",
         sort=False,
     )
-    merged_rows = merged_rows[RETAIL_OUTPUT_COLUMNS]
+    missing_product_mask = merged_rows.loc[:, REQUIRED_PRODUCT_COLUMNS].isna().any(axis=1)
+    unmatched_sales = merged_rows.loc[missing_product_mask].copy()
+    if not unmatched_sales.empty:
+        unmatched_sales["rejection_stage"] = "transformation"
+        unmatched_sales["rejection_reason"] = "product_id: no valid matching product"
+    merged_rows = merged_rows.loc[~missing_product_mask, RETAIL_OUTPUT_COLUMNS].copy()
+    sales_rejected_rows = pd.concat([sales_result.rejected_rows, unmatched_sales], ignore_index=True, sort=False)
     logger.info(
         "Retail datasets merged: sales_rows=%s output_rows=%s",
         len(sales_result.transformed_rows),
@@ -45,6 +52,6 @@ def transform_retail(sales_dataframe: pd.DataFrame, products_dataframe: pd.DataF
     )
     return RetailTransformationResult(
         transformed_rows=merged_rows,
-        sales_rejected_rows=sales_result.rejected_rows,
+        sales_rejected_rows=sales_rejected_rows,
         products_rejected_rows=products_result.rejected_rows,
     )

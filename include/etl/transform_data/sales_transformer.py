@@ -12,6 +12,8 @@ from include.utils.logger import setup_logger
 
 
 logger = setup_logger(__name__)
+ALLOWED_REGIONS = frozenset({"North", "South", "East", "West"})
+ALLOWED_ORDER_STATUSES = frozenset({"Completed", "Shipped", "Pending", "Returned"})
 SALES_COLUMN_MAPPING = {
     "sales id": "sales_id",
     "proDuct Id": "product_id",
@@ -58,6 +60,28 @@ def transform_sales(dataframe: pd.DataFrame) -> TransformationResult:
     transformed_data["order_status"] = (
         transformed_data["order_status"].astype("string").str.strip().str.title()
     )
+
+    # Keep the strict output contract reachable by rejecting business-invalid
+    # source rows instead of silently changing their values.
+    add_rejection_reason(rejection_reasons, transformed_data["sales_id"].le(0), "sales_id: must be positive")
+    add_rejection_reason(rejection_reasons, transformed_data["product_id"].le(0), "product_id: must be positive")
+    add_rejection_reason(rejection_reasons, transformed_data["quantity"].le(0), "quantity: must be greater than zero")
+    add_rejection_reason(rejection_reasons, transformed_data["price"].lt(0), "price: must be non-negative")
+    add_rejection_reason(
+        rejection_reasons,
+        transformed_data["discount"].lt(0) | transformed_data["discount"].gt(1),
+        "discount: must be between zero and one",
+    )
+    add_rejection_reason(rejection_reasons, transformed_data["region"].isna(), "region: missing")
+    add_rejection_reason(
+        rejection_reasons, ~transformed_data["region"].isin(ALLOWED_REGIONS), "region: invalid value"
+    )
+    add_rejection_reason(
+        rejection_reasons,
+        ~transformed_data["order_status"].isin(ALLOWED_ORDER_STATUSES),
+        "order_status: invalid value",
+    )
+    add_rejection_reason(rejection_reasons, transformed_data["sales_id"].duplicated(keep=False), "sales_id: duplicate")
 
     rejected_rows = build_rejected_rows(source_data, rejection_reasons)
     clean_rows = transformed_data.loc[rejection_reasons.eq("")].copy()

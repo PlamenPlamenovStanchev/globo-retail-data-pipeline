@@ -11,7 +11,7 @@ from include.etl.extract_data.products_extractor import extract_products
 from include.etl.extract_data.sales_extractor import extract_sales
 from include.etl.load_data.processed_s3_loader import write_processed_data
 from include.etl.load_data.rejected_s3_loader import write_rejected_records
-from include.etl.transform_data.retail_transformer import transform_retail
+from include.etl.transform_data.retail_transformer import RETAIL_OUTPUT_COLUMNS, transform_retail
 from include.utils.config_loader import load_config
 from include.utils.logger import setup_logger
 from include.utils.run_utils import normalise_run_date, sanitise_run_id
@@ -85,12 +85,15 @@ def _write_intermediate_dataframe(
     return reference
 
 
-def _read_intermediate_dataframe(reference: S3DatasetReference) -> pd.DataFrame:
+def _read_intermediate_dataframe(
+    reference: S3DatasetReference, columns: list[str] | None = None
+) -> pd.DataFrame:
     """Read a work-zone dataset referenced by lightweight task metadata."""
     aws_conn_id = load_config()["aws"]["connection_id"]
     dataframe = pd.read_parquet(
         f"s3://{reference['bucket']}/{reference['key']}",
         storage_options=get_storage_options(aws_conn_id),
+        columns=columns,
     )
     logger.info("Work dataset loaded: dataset=%s rows=%s key=%s", reference["dataset"], len(dataframe), reference["key"])
     return dataframe
@@ -145,7 +148,9 @@ def transform_retail_task(sales_reference: S3DatasetReference, products_referenc
 @task(task_id="validate_output", retries=0)
 def validate_output_task(reference: S3DatasetReference) -> dict[str, Any]:
     """Strictly validate transformed output; failures stop downstream loading."""
-    validated_dataframe = validate_retail_output(_read_intermediate_dataframe(reference))
+    # Parquet readers can infer run_date/run_id from the work-zone path. Select
+    # only stored analytical columns so partition metadata is never validated as data.
+    validated_dataframe = validate_retail_output(_read_intermediate_dataframe(reference, RETAIL_OUTPUT_COLUMNS))
     logger.info("Strict output validation completed: rows=%s", len(validated_dataframe))
     return {**reference, "output_validation": {"is_valid": True}}
 
@@ -155,6 +160,8 @@ def load_processed_task(reference: S3DatasetReference) -> dict[str, Any]:
     """Write output approved by the strict validation task to the processed zone."""
     return asdict(
         write_processed_data(
-            _read_intermediate_dataframe(reference), run_date=reference["run_date"], run_id=reference["run_id"]
+            _read_intermediate_dataframe(reference, RETAIL_OUTPUT_COLUMNS),
+            run_date=reference["run_date"],
+            run_id=reference["run_id"],
         )
     )
