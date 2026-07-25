@@ -3,7 +3,7 @@ project:
   environment: development
 
 aws:
-connection_id: my_aws_conn
+  connection_id: my_aws_conn
 
 s3: 
   bucket_name: etl-and-data-warehouse
