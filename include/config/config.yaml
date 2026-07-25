@@ -19,6 +19,9 @@ s3:
     prefix: globo-retail-data-pipeline/processed-zone
     sales_clean_prefix: globo-retail-data-pipeline/processed-zone/sales-clean
 
+  work_zone:
+    prefix: globo-retail-data-pipeline/work
+
   rejected_zone:
     prefix: globo-retail-data-pipeline/rejected-zone
     sales_prefix: globo-retail-data-pipeline/rejected-zone/sales
