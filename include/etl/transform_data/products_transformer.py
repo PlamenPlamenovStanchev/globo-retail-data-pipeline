@@ -84,6 +84,9 @@ def transform_products(dataframe: pd.DataFrame) -> TransformationResult:
     clean_rows = transformed_data.loc[rejection_reasons.eq("")].copy()
     clean_rows["product_id"] = clean_rows["product_id"].astype("int64")
     clean_rows["rating"] = clean_rows["rating"].astype("float64")
+    # All nullable/invalid values were rejected above; use the plain dtype the
+    # strict analytical schema expects after the Parquet round-trip.
+    clean_rows["in_stock"] = clean_rows["in_stock"].astype(bool)
     clean_rows = clean_rows[list(PRODUCT_COLUMNS)]
 
     logger.info(

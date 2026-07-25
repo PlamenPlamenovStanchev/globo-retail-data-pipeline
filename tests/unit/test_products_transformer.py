@@ -29,6 +29,7 @@ class ProductsTransformerTests(unittest.TestCase):
 
         self.assertEqual(transformed.loc[0, "product_id"], 1000)
         self.assertEqual(transformed.loc[0, "rating"], 4.5)
+        self.assertEqual(transformed["in_stock"].dtype, bool)
         self.assertEqual(transformed.loc[0, "category"], "Sports")
         self.assertEqual(transformed.loc[0, "brand"], "BrandA")
         self.assertEqual(transformed.loc[0, "launch_date"], pd.Timestamp("2024-01-01"))
