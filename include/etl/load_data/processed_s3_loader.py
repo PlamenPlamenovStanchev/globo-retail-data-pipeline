@@ -1,8 +1,7 @@
 """Direct persistence of validated analytical data in the S3 processed zone."""
 
 from dataclasses import dataclass
-from datetime import date, datetime
-import re
+from datetime import date
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
@@ -11,6 +10,7 @@ from pyarrow import ArrowException
 
 from include.utils.config_loader import load_config
 from include.utils.logger import setup_logger
+from include.utils.run_utils import normalise_run_date, sanitise_run_id
 from include.utils.s3_utils import get_storage_options
 
 
@@ -26,30 +26,6 @@ class ProcessedWriteResult:
     row_count: int
     format: str
     s3_uri: str
-
-
-def _normalise_run_date(run_date: date | str) -> str:
-    """Return an ISO date partition value or raise for an invalid value."""
-    if isinstance(run_date, datetime):
-        return run_date.date().isoformat()
-    if isinstance(run_date, date):
-        return run_date.isoformat()
-    if isinstance(run_date, str):
-        try:
-            return date.fromisoformat(run_date).isoformat()
-        except ValueError as error:
-            raise ValueError("run_date must be an ISO date in YYYY-MM-DD format.") from error
-    raise TypeError("run_date must be a date or ISO date string.")
-
-
-def _sanitise_run_id(run_id: str) -> str:
-    """Make a run identifier safe for a deterministic S3 path segment."""
-    if not isinstance(run_id, str):
-        raise TypeError("run_id must be a string.")
-    sanitised_run_id = re.sub(r"[^A-Za-z0-9_.-]+", "-", run_id).strip(".-")
-    if not sanitised_run_id:
-        raise ValueError("run_id must contain at least one safe key character.")
-    return sanitised_run_id
 
 
 def write_processed_data(
@@ -75,15 +51,15 @@ def write_processed_data(
     except KeyError as error:
         raise ValueError(f"Missing processed S3 configuration: {error}") from error
 
-    partition_date = _normalise_run_date(run_date)
+    partition_date = normalise_run_date(run_date)
     key_parts = [processed_prefix, f"run_date={partition_date}"]
     if run_id is not None:
-        key_parts.append(f"run_id={_sanitise_run_id(run_id)}")
+        key_parts.append(f"run_id={sanitise_run_id(run_id)}")
     key = "/".join(key_parts + ["sales_clean.parquet"])
     s3_uri = f"s3://{bucket}/{key}"
 
     try:
-        _, storage_options = get_storage_options(aws_conn_id)
+        storage_options = get_storage_options(aws_conn_id)
         logger.info("Writing validated processed dataset to S3: rows=%s key=%s", len(dataframe), key)
         # s3fs writes the in-memory DataFrame directly; no local staging file is used.
         dataframe.to_parquet(

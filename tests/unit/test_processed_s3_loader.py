@@ -29,7 +29,7 @@ class ProcessedS3LoaderTests(unittest.TestCase):
         )
         self.storage_patch = patch(
             "include.etl.load_data.processed_s3_loader.get_storage_options",
-            return_value=(object(), {"secret": "not-returned"}),
+            return_value={"secret": "not-returned"},
         )
         self.config_patch.start()
         self.mock_storage = self.storage_patch.start()

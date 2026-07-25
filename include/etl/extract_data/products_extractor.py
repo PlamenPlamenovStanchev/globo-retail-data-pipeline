@@ -23,7 +23,7 @@ def extract_products() -> pd.DataFrame:
 
     try:
         # Airflow resolves the connection; pandas reads the S3 object directly.
-        _, storage_options = get_storage_options(aws_conn_id)
+        storage_options = get_storage_options(aws_conn_id)
         logger.info("Extracting product data from bucket=%s, key=%s", bucket_name, products_key)
         products_data = pd.read_json(s3_uri, storage_options=storage_options)
     except Exception as error:

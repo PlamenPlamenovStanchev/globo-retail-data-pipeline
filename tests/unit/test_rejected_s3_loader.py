@@ -38,7 +38,7 @@ class RejectedS3LoaderTests(unittest.TestCase):
         )
         self.storage_patch = patch(
             "include.etl.load_data.rejected_s3_loader.get_storage_options",
-            return_value=(object(), {"key": "not-returned"}),
+            return_value={"key": "not-returned"},
         )
         self.mock_config = self.config_patch.start()
         self.mock_storage = self.storage_patch.start()

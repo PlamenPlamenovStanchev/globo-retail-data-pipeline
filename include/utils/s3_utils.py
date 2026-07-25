@@ -3,7 +3,7 @@ from typing import Any
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 
-def get_storage_options(aws_conn_id: str) -> tuple[S3Hook, dict[str, Any]]:
+def get_storage_options(aws_conn_id: str) -> dict[str, Any]:
     """
     Get storage options for S3 connection.
 
@@ -20,4 +20,4 @@ def get_storage_options(aws_conn_id: str) -> tuple[S3Hook, dict[str, Any]]:
         "token": credentials.token,
     }
 
-    return s3_hook, storage_options
+    return storage_options
