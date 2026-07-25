@@ -6,7 +6,7 @@ from pendulum import datetime
 
 
 @dag(
-    dag_id="retail_dag",
+    dag_id="globo_retail_etl",
     start_date=datetime(2026, 7, 23),
     schedule=None,
     catchup=False,
