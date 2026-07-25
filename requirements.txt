@@ -18,3 +18,4 @@ SQLAlchemy==1.4.54
 SQLAlchemy-Utils==0.41.2
 SQLAlchemy-JSONField==1.0.2
 PyYAML==6.0.3
+pyarrow==18.1.0

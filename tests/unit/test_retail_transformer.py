@@ -1,0 +1,48 @@
+"""Unit tests for safe sales-to-products retail transformation."""
+
+import unittest
+
+import pandas as pd
+
+from include.etl.transform_data.retail_transformer import RETAIL_OUTPUT_COLUMNS, transform_retail
+
+
+def _sales_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "sales id": [1, 2], "proDuct Id": [1000, 9999], "Region": ["east", "West"],
+            "qty": [2, 1], "Price": [10.0, 5.0], "Time stamp": ["01-01-24 0:00", "02-01-24 0:00"],
+            "discount": [0.1, 0.0], "order_status": ["Completed", "Pending"],
+        }
+    )
+
+
+def _products_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "product_id": [1000], "category": ["Sports"], "brand": ["BrandA"], "rating": [4.0],
+            "in_stock": [True], "launch_date": ["2024-01-01"],
+        }
+    )
+
+
+class RetailTransformerTests(unittest.TestCase):
+    """Verify many-to-one left joining preserves transactional sales rows."""
+
+    def test_join_adds_product_attributes_and_preserves_unmatched_sales(self) -> None:
+        result = transform_retail(_sales_frame(), _products_frame())
+        transformed = result.transformed_rows
+
+        self.assertEqual(len(transformed), 2)
+        self.assertEqual(list(transformed.columns), RETAIL_OUTPUT_COLUMNS)
+        self.assertEqual(transformed.loc[0, "category"], "Sports")
+        self.assertTrue(pd.isna(transformed.loc[1, "category"]))
+        self.assertEqual(transformed.loc[0, "gross_revenue"], 20.0)
+        self.assertEqual(len(result.sales_rejected_rows), 0)
+        self.assertEqual(len(result.products_rejected_rows), 0)
+
+    def test_duplicate_product_ids_raise_instead_of_multiplying_sales(self) -> None:
+        products = pd.concat([_products_frame(), _products_frame()], ignore_index=True)
+
+        with self.assertRaises(pd.errors.MergeError):
+            transform_retail(_sales_frame(), products)
