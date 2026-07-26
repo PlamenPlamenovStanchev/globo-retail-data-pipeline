@@ -17,15 +17,15 @@ s3:
 
   processed_zone:
     prefix: globo-retail-data-pipeline/processed-zone
-    sales_clean_prefix: globo-retail-data-pipeline/processed-zone/sales-clean
+    sales_clean_key: globo-retail-data-pipeline/processed-zone/sales_clean.parquet
 
   work_zone:
     prefix: globo-retail-data-pipeline/work
 
   rejected_zone:
     prefix: globo-retail-data-pipeline/rejected-zone
-    sales_prefix: globo-retail-data-pipeline/rejected-zone/sales
-    products_prefix: globo-retail-data-pipeline/rejected-zone/products
+    rejected_sales_key: globo-retail-data-pipeline/rejected-zone/rejected_sales.parquet
+    rejected_products_key: globo-retail-data-pipeline/rejected-zone/rejected_products.parquet
 
 snowflake:
   connection_id: my_snowflake_conn

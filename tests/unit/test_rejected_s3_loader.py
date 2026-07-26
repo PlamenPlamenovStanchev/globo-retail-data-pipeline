@@ -1,7 +1,6 @@
 """Unit tests for rejected-record S3 persistence without AWS access."""
 
 from dataclasses import asdict
-from datetime import date
 import unittest
 from unittest.mock import patch
 
@@ -15,8 +14,8 @@ TEST_CONFIG = {
     "s3": {
         "bucket_name": "test-bucket",
         "rejected_zone": {
-            "sales_prefix": "project/rejected-zone/sales",
-            "products_prefix": "project/rejected-zone/products",
+            "rejected_sales_key": "project/rejected-zone/rejected_sales.parquet",
+            "rejected_products_key": "project/rejected-zone/rejected_products.parquet",
         },
     },
 }
@@ -45,13 +44,8 @@ class RejectedS3LoaderTests(unittest.TestCase):
         self.addCleanup(self.config_patch.stop)
         self.addCleanup(self.storage_patch.stop)
 
-    def _write(self, dataset_name: str, **kwargs: object):
-        return write_rejected_records(
-            self.dataframe,
-            dataset_name,
-            run_date=kwargs.get("run_date", date(2026, 7, 25)),
-            run_id=kwargs.get("run_id", "manual/run 01"),
-        )
+    def _write(self, dataset_name: str):
+        return write_rejected_records(self.dataframe, dataset_name)
 
     def test_sales_key_and_preserved_columns(self) -> None:
         with patch.object(pd.DataFrame, "to_parquet", autospec=True) as write_mock:
@@ -59,7 +53,7 @@ class RejectedS3LoaderTests(unittest.TestCase):
 
         self.assertEqual(
             result.key,
-            "project/rejected-zone/sales/run_date=2026-07-25/rejected_sales_manual-run-01.parquet",
+            "project/rejected-zone/rejected_sales.parquet",
         )
         self.assertEqual(result.row_count, 1)
         self.assertTrue(result.written)
@@ -74,7 +68,7 @@ class RejectedS3LoaderTests(unittest.TestCase):
 
         self.assertEqual(
             result.key,
-            "project/rejected-zone/products/run_date=2026-07-25/rejected_products_manual-run-01.parquet",
+            "project/rejected-zone/rejected_products.parquet",
         )
 
     def test_empty_dataframe_skips_s3_write(self) -> None:
@@ -83,8 +77,6 @@ class RejectedS3LoaderTests(unittest.TestCase):
             result = write_rejected_records(
                 empty_dataframe,
                 "sales",
-                run_date="2026-07-25",
-                run_id="run-1",
             )
 
         self.assertFalse(result.written)

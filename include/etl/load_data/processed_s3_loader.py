@@ -1,7 +1,6 @@
 """Direct persistence of validated analytical data in the S3 processed zone."""
 
 from dataclasses import dataclass
-from datetime import date
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
@@ -10,7 +9,6 @@ from pyarrow import ArrowException
 
 from include.utils.config_loader import load_config
 from include.utils.logger import setup_logger
-from include.utils.run_utils import normalise_run_date, sanitise_run_id
 from include.utils.s3_utils import get_storage_options
 
 
@@ -28,11 +26,7 @@ class ProcessedWriteResult:
     s3_uri: str
 
 
-def write_processed_data(
-    dataframe: pd.DataFrame,
-    run_date: date | str,
-    run_id: str | None = None,
-) -> ProcessedWriteResult:
+def write_processed_data(dataframe: pd.DataFrame) -> ProcessedWriteResult:
     """Write already-validated analytical data directly to processed-zone Parquet.
 
     The caller is responsible for strict output validation before calling this
@@ -46,16 +40,11 @@ def write_processed_data(
     config: dict[str, Any] = load_config()
     try:
         bucket = config["s3"]["bucket_name"]
-        processed_prefix = config["s3"]["processed_zone"]["sales_clean_prefix"]
+        key = config["s3"]["processed_zone"]["sales_clean_key"]
         aws_conn_id = config["aws"]["connection_id"]
     except KeyError as error:
         raise ValueError(f"Missing processed S3 configuration: {error}") from error
 
-    partition_date = normalise_run_date(run_date)
-    key_parts = [processed_prefix, f"run_date={partition_date}"]
-    if run_id is not None:
-        key_parts.append(f"run_id={sanitise_run_id(run_id)}")
-    key = "/".join(key_parts + ["sales_clean.parquet"])
     s3_uri = f"s3://{bucket}/{key}"
 
     try:

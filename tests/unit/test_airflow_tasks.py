@@ -107,9 +107,7 @@ class AirflowTaskTests(unittest.TestCase):
         ):
             result = retail_pipeline.load_processed_task.function(REFERENCE)
 
-        write_mock.assert_called_once_with(
-            ANY, run_date="2026-07-25", run_id="test-run"
-        )
+        write_mock.assert_called_once_with(ANY)
         self.assertEqual(result, asdict(write_result))
         self.assertNotIn("dataframe", result)
         json.dumps(result)

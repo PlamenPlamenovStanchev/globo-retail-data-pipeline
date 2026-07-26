@@ -131,8 +131,8 @@ def transform_retail_task(sales_reference: S3DatasetReference, products_referenc
         _read_intermediate_dataframe(sales_reference), _read_intermediate_dataframe(products_reference)
     )
     run_date, run_id = sales_reference["run_date"], sales_reference["run_id"]
-    sales_rejected = write_rejected_records(result.sales_rejected_rows, "sales", run_date, run_id)
-    products_rejected = write_rejected_records(result.products_rejected_rows, "products", run_date, run_id)
+    sales_rejected = write_rejected_records(result.sales_rejected_rows, "sales")
+    products_rejected = write_rejected_records(result.products_rejected_rows, "products")
     transformed_reference = _write_intermediate_dataframe(result.transformed_rows, "retail", "transformed", run_date, run_id)
     logger.info(
         "Retail transformation completed: transformed=%s sales_rejected=%s products_rejected=%s",
@@ -161,7 +161,5 @@ def load_processed_task(reference: S3DatasetReference) -> dict[str, Any]:
     return asdict(
         write_processed_data(
             _read_intermediate_dataframe(reference, RETAIL_OUTPUT_COLUMNS),
-            run_date=reference["run_date"],
-            run_id=reference["run_id"],
         )
     )
