@@ -5,6 +5,8 @@ import unittest
 import pandas as pd
 
 from include.etl.transform_data.retail_transformer import RETAIL_OUTPUT_COLUMNS, transform_retail
+from include.etl.transform_data.products_transformer import transform_products
+from include.etl.transform_data.sales_transformer import transform_sales
 
 
 def _sales_frame() -> pd.DataFrame:
@@ -30,7 +32,7 @@ class RetailTransformerTests(unittest.TestCase):
     """Verify many-to-one left joining preserves transactional sales rows."""
 
     def test_join_rejects_sales_without_a_valid_matching_product(self) -> None:
-        result = transform_retail(_sales_frame(), _products_frame())
+        result = transform_retail(transform_sales(_sales_frame()).transformed_rows, transform_products(_products_frame()).transformed_rows)
         transformed = result.transformed_rows
 
         self.assertEqual(len(transformed), 1)
@@ -44,7 +46,7 @@ class RetailTransformerTests(unittest.TestCase):
     def test_duplicate_product_ids_are_rejected_instead_of_multiplying_sales(self) -> None:
         products = pd.concat([_products_frame(), _products_frame()], ignore_index=True)
 
-        result = transform_retail(_sales_frame(), products)
+        result = transform_retail(transform_sales(_sales_frame()).transformed_rows, transform_products(products).transformed_rows)
 
         self.assertEqual(len(result.transformed_rows), 0)
-        self.assertEqual(len(result.products_rejected_rows), 2)
+        self.assertEqual(len(result.products_rejected_rows), 0)

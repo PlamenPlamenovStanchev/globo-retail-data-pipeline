@@ -1,6 +1,6 @@
 from airflow.sdk import dag
-from include.pipelines.retail_pipeline import load_processed_task, transform_retail_task, validate_output_task
-from include.pipelines.task_groups import extract_group
+from include.pipelines.retail_pipeline import load_processed_task, validate_output_task
+from include.pipelines.task_groups import extract_group, input_validation_group, transform_group
 from pendulum import datetime
 
 
@@ -14,8 +14,9 @@ from pendulum import datetime
 )
 def globo_retail_etl():
     extracted = extract_group()
-    transformed = transform_retail_task(extracted["sales"], extracted["products"])
-    validated = validate_output_task(transformed["transformed"])
+    input_validated = input_validation_group(extracted)
+    transformed = transform_group(input_validated)
+    validated = validate_output_task(transformed)
     load_processed_task(validated)
 
 

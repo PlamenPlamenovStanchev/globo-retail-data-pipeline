@@ -11,7 +11,9 @@ from include.etl.extract_data.products_extractor import extract_products
 from include.etl.extract_data.sales_extractor import extract_sales
 from include.etl.load_data.processed_s3_loader import write_processed_data
 from include.etl.load_data.rejected_s3_loader import write_rejected_records
+from include.etl.transform_data.products_transformer import transform_products
 from include.etl.transform_data.retail_transformer import RETAIL_OUTPUT_COLUMNS, transform_retail
+from include.etl.transform_data.sales_transformer import transform_sales
 from include.utils.config_loader import load_config
 from include.utils.logger import setup_logger
 from include.utils.run_utils import normalise_run_date, sanitise_run_id
@@ -104,45 +106,59 @@ def _validated_reference(reference: S3DatasetReference, is_valid: bool, issue_co
     return {**reference, "input_validation": {"is_valid": is_valid, "issue_count": issue_count}}
 
 
-@task(task_id="extract_validate_sales", retries=2, retry_delay=RETRY_DELAY)
-def extract_validate_sales_task() -> dict[str, Any]:
-    """Extract sales, log non-blocking RAW validation, and persist one work object."""
-    result = validate_sales_input(extract_sales())
+@task(task_id="extract_sales", retries=2, retry_delay=RETRY_DELAY)
+def extract_sales_task() -> dict[str, Any]:
+    """Extract sales and persist one run-specific RAW work object."""
+    run_date, run_id = _task_run_identity()
+    return _write_intermediate_dataframe(extract_sales(), "sales", "extracted", run_date, run_id)
+
+
+@task(task_id="extract_products", retries=2, retry_delay=RETRY_DELAY)
+def extract_products_task() -> dict[str, Any]:
+    """Extract products and persist one run-specific RAW work object."""
+    run_date, run_id = _task_run_identity()
+    return _write_intermediate_dataframe(extract_products(), "products", "extracted", run_date, run_id)
+
+
+@task(task_id="validate_sales_input")
+def validate_sales_input_task(reference: S3DatasetReference) -> dict[str, Any]:
+    """Log non-blocking validation and pass the sales work reference through unchanged."""
+    result = validate_sales_input(_read_intermediate_dataframe(reference))
     logger.info("Sales input validation completed: valid=%s issues=%s", result.is_valid, result.error_count)
-    run_date, run_id = _task_run_identity()
-    reference = _write_intermediate_dataframe(result.dataframe, "sales", "extracted", run_date, run_id)
     return _validated_reference(reference, result.is_valid, result.error_count)
 
 
-@task(task_id="extract_validate_products", retries=2, retry_delay=RETRY_DELAY)
-def extract_validate_products_task() -> dict[str, Any]:
-    """Extract products, log non-blocking RAW validation, and persist one work object."""
-    result = validate_products_input(extract_products())
+@task(task_id="validate_products_input")
+def validate_products_input_task(reference: S3DatasetReference) -> dict[str, Any]:
+    """Log non-blocking validation and pass the products work reference through unchanged."""
+    result = validate_products_input(_read_intermediate_dataframe(reference))
     logger.info("Products input validation completed: valid=%s issues=%s", result.is_valid, result.error_count)
-    run_date, run_id = _task_run_identity()
-    reference = _write_intermediate_dataframe(result.dataframe, "products", "extracted", run_date, run_id)
     return _validated_reference(reference, result.is_valid, result.error_count)
+
+
+@task(task_id="transform_sales")
+def transform_sales_task(reference: S3DatasetReference) -> dict[str, Any]:
+    """Transform sales once, persist its rejected rows, and return a work reference."""
+    result = transform_sales(_read_intermediate_dataframe(reference))
+    rejected = write_rejected_records(result.rejected_rows, "sales")
+    return _write_intermediate_dataframe(result.transformed_rows, "sales", "transformed", reference["run_date"], reference["run_id"])
+
+
+@task(task_id="transform_products")
+def transform_products_task(reference: S3DatasetReference) -> dict[str, Any]:
+    """Transform products once, persist its rejected rows, and return a work reference."""
+    result = transform_products(_read_intermediate_dataframe(reference))
+    rejected = write_rejected_records(result.rejected_rows, "products")
+    return _write_intermediate_dataframe(result.transformed_rows, "products", "transformed", reference["run_date"], reference["run_id"])
 
 
 @task(task_id="transform_retail")
 def transform_retail_task(sales_reference: S3DatasetReference, products_reference: S3DatasetReference) -> dict[str, Any]:
-    """Transform source references and persist rejected records to the rejected zone."""
-    result = transform_retail(
-        _read_intermediate_dataframe(sales_reference), _read_intermediate_dataframe(products_reference)
-    )
-    run_date, run_id = sales_reference["run_date"], sales_reference["run_id"]
-    sales_rejected = write_rejected_records(result.sales_rejected_rows, "sales")
-    products_rejected = write_rejected_records(result.products_rejected_rows, "products")
-    transformed_reference = _write_intermediate_dataframe(result.transformed_rows, "retail", "transformed", run_date, run_id)
-    logger.info(
-        "Retail transformation completed: transformed=%s sales_rejected=%s products_rejected=%s",
-        transformed_reference["row_count"], sales_rejected.row_count, products_rejected.row_count,
-    )
-    return {
-        "transformed": transformed_reference,
-        "sales_rejected": asdict(sales_rejected),
-        "products_rejected": asdict(products_rejected),
-    }
+    """Combine transformed work datasets into the final retail work dataset."""
+    result = transform_retail(_read_intermediate_dataframe(sales_reference), _read_intermediate_dataframe(products_reference))
+    if not result.sales_rejected_rows.empty:
+        logger.warning("Dropped %s sales without a valid matching product", len(result.sales_rejected_rows))
+    return _write_intermediate_dataframe(result.transformed_rows, "retail", "transformed", sales_reference["run_date"], sales_reference["run_id"])
 
 
 @task(task_id="validate_output", retries=0)
