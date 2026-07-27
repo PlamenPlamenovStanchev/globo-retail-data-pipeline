@@ -1,3 +1,4 @@
+-- create a star schema in Snowflake using the cleansed data from the previous step. The star schema will consist of a fact table and two dimension tables: DIM_DATE and DIM_PRODUCT.--
 CREATE OR REPLACE TABLE STAR.DIM_DATE AS
 SELECT DISTINCT
     TO_NUMBER(TO_CHAR(CAST(timestamp AS DATE), 'YYYYMMDD')) AS date_key,
@@ -17,9 +18,11 @@ FROM STAR.DIM_DATE
 ORDER BY full_date
 LIMIT 20;
 
+
 SELECT COUNT(*) AS date_rows
 FROM STAR.DIM_DATE;
 
+-- creating the DIM_PRODUCT table to include product category in the star schema. This will allow for more detailed analysis of sales data by product category. --
 CREATE OR REPLACE TABLE STAR.DIM_PRODUCT AS
 SELECT
     ROW_NUMBER() OVER (ORDER BY product_id) AS product_key,
@@ -40,17 +43,20 @@ FROM (
     FROM GLOBO_RETAIL_DB.CLEANSED.SALES_CLEAN
 );
 
+
 -- check if the table is created successfully --
 SELECT *
 FROM STAR.DIM_PRODUCT
 ORDER BY product_key
 LIMIT 20;
 
+
 SELECT
     COUNT(*) AS dimension_rows,
     COUNT(DISTINCT product_id) AS distinct_products
 FROM STAR.DIM_PRODUCT;
 
+-- creating the FACT_SALES table to include product category in the star schema. This will allow for more detailed analysis of sales data by product category. --
 CREATE OR REPLACE TABLE STAR.FACT_SALES AS
 SELECT
     s.sales_id,
@@ -70,6 +76,7 @@ JOIN STAR.DIM_DATE AS d
     ON CAST(s.timestamp AS DATE) = d.full_date
 JOIN STAR.DIM_PRODUCT AS p
     ON s.product_id = p.product_id;
+
 
 -- check if the table is created successfully --
 SELECT *
