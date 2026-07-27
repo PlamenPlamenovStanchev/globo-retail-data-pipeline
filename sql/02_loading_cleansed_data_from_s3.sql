@@ -1,5 +1,5 @@
 SELECT COUNT(*)
-FROM @AWS_STAGE;
+FROM @GLOBO_RETAIL_DB.EXTERNAL_STAGE.AWS_STAGE;
 
 -- creating the CLEANSED.SALES_CLEAN table to store the cleansed sales data from the raw data in S3. This will allow for more efficient querying and analysis of the sales data. --
 CREATE OR REPLACE TABLE GLOBO_RETAIL_DB.CLEANSED.SALES_CLEAN (

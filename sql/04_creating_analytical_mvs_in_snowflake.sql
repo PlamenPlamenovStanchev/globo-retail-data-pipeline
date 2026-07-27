@@ -58,30 +58,7 @@ ORDER BY net_revenue DESC
 LIMIT 20;
 
 
---changing my fact table to include product category in star schema--
-CREATE OR REPLACE TABLE GLOBO_RETAIL_DB.STAR.FACT_SALES AS
-SELECT
-    s.sales_id,
-    d.date_key,
-    p.product_key,
-    s.timestamp AS transaction_timestamp,
-    s.region,
-    s.order_status,
-    p.category,
-    s.quantity,
-    s.price,
-    s.discount,
-    s.gross_revenue,
-    s.discount_amount,
-    s.net_revenue
-FROM GLOBO_RETAIL_DB.CLEANSED.SALES_CLEAN AS s
-JOIN GLOBO_RETAIL_DB.STAR.DIM_DATE AS d
-    ON CAST(s.timestamp AS DATE) = d.full_date
-JOIN GLOBO_RETAIL_DB.STAR.DIM_PRODUCT AS p
-    ON s.product_id = p.product_id;
-
-
----category performance--
+-- Category performance --
 CREATE OR REPLACE MATERIALIZED VIEW
     GLOBO_RETAIL_DB.PRESENTATION.MV_CATEGORY_PERFORMANCE AS
 SELECT

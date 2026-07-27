@@ -65,6 +65,7 @@ SELECT
     s.timestamp AS transaction_timestamp,
     s.region,
     s.order_status,
+    p.category,
     s.quantity,
     s.price,
     s.discount,
