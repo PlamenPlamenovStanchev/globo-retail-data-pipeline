@@ -140,7 +140,7 @@ def validate_products_input_task(reference: S3DatasetReference) -> dict[str, Any
 def transform_sales_task(reference: S3DatasetReference) -> dict[str, Any]:
     """Transform sales once, persist its rejected rows, and return a work reference."""
     result = transform_sales(_read_intermediate_dataframe(reference))
-    rejected = write_rejected_records(result.rejected_rows, "sales")
+    write_rejected_records(result.rejected_rows, "sales")
     return _write_intermediate_dataframe(result.transformed_rows, "sales", "transformed", reference["run_date"], reference["run_id"])
 
 
@@ -148,7 +148,7 @@ def transform_sales_task(reference: S3DatasetReference) -> dict[str, Any]:
 def transform_products_task(reference: S3DatasetReference) -> dict[str, Any]:
     """Transform products once, persist its rejected rows, and return a work reference."""
     result = transform_products(_read_intermediate_dataframe(reference))
-    rejected = write_rejected_records(result.rejected_rows, "products")
+    write_rejected_records(result.rejected_rows, "products")
     return _write_intermediate_dataframe(result.transformed_rows, "products", "transformed", reference["run_date"], reference["run_id"])
 
 
